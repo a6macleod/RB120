@@ -1,3 +1,4 @@
+require 'pry'
 class Board
   WINNING_LINES = [[1, 2, 3], [4, 5, 6], [7, 8, 9]] + # rows
                   [[1, 4, 7], [2, 5, 8], [3, 6, 9]] + # columns
@@ -53,6 +54,7 @@ class Board
   private
 
   def three_identical_markers?(squares)
+    binding.pry
     markers = squares.select(&:marked?).collect(&:marker)
     return false if markers.size != 3
     markers.min == markers.max
@@ -90,28 +92,73 @@ class Player
 end
 
 class TTTGame
-  HUMAN_MARKER = 'X'
-  COMPUTER_MARKER = 'O'
-  FIRST_TO_MOVE = HUMAN_MARKER
-
-  attr_reader :board, :human, :computer
+  attr_reader :board, :human, :computer, :human_name, :computer_name
+  attr_writer :human_marker, :human_name
 
   def initialize
     @board = Board.new
-    @human = Player.new(HUMAN_MARKER)
-    @computer = Player.new(COMPUTER_MARKER)
-    @current_marker = FIRST_TO_MOVE
+    @human_name = nil
+    @computer_name = ['Hal', 'Chappie', 'R2D2', 'Data'].sample
+    @human_marker = nil
+    @computer_marker = nil
+    @first_to_move = nil
+    @current_marker = @human_marker
   end
 
   def play
     clear
     display_welcome_message
+    enter_name
+    pick_markers
+    set_first_to_move
+    clear
 
     main_game
     display_goodbye_message
   end
 
   private
+
+  def set_first_to_move
+    @first_to_move = @human_marker
+  end
+
+  def enter_name
+    puts "Please enter your name"
+    name = nil
+    loop do
+      name = gets.chomp.capitalize
+      break if name.length > 1
+      puts "Please enter a name"
+    end
+    self.human_name = name
+  end
+
+  def player_pick_marker
+    puts "Please pick a marker (A - Z)"
+    mark = nil
+    loop do
+    mark = gets.chomp.upcase
+      break if mark.length == 1 && ('A'..'Z').include?(mark)
+      puts "Please just pick one letter"
+    end
+    self.human_marker = mark
+  end
+
+  def create_players
+    @human = Player.new(@human_marker)
+    @computer = Player.new(@computer_marker)
+  end
+
+  def pick_markers
+    player_pick_marker
+    loop do
+      @computer_marker = ['X', 'O'].sample
+      break if @computer_marker != @human_marker
+    end
+    @current_marker = @human_marker
+    create_players
+  end
 
   def player_move
     loop do
@@ -147,7 +194,7 @@ class TTTGame
   end
 
   def display_board
-    puts "You are #{human.marker}, Computer is #{computer.marker}"
+    puts "#{human_name} is #{human.marker}, #{computer_name} is #{computer.marker}"
     puts ""
     board.draw
     puts ""
@@ -176,24 +223,24 @@ class TTTGame
   def current_player_moves
     if human_turn?
       human_moves
-      @current_marker = COMPUTER_MARKER
+      @current_marker = @computer_marker
     else
       computer_moves
-      @current_marker = HUMAN_MARKER
+      @current_marker = @human_marker
     end
   end
 
   def human_turn?
-    @current_marker == HUMAN_MARKER
+    @current_marker == @human_marker
   end
 
   def display_result
     clear_screen_and_display_board
 
     case board.winning_marker
-    when HUMAN_MARKER
+    when @human_marker
       puts "You won!"
-    when COMPUTER_MARKER
+    when @computer_marker
       puts "The computer won!"
     else
       puts "The board is full, its a tie!"
@@ -214,7 +261,7 @@ class TTTGame
 
   def reset
     board.reset
-    @current_marker = FIRST_TO_MOVE
+    @current_marker = @first_to_move
     clear
   end
 

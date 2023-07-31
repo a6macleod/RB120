@@ -1,23 +1,24 @@
-class Score
+module Score
   attr_accessor :score
 
   MAX_SCORE = 3
 
   def initialize
-    @score = 0
+    self.score = 0
   end
 
   def increment_score
-      @score += 1
+    self.score += 1
   end
 
   def win?
-    self.score >= MAX_SCORE
+    score >= MAX_SCORE
   end
 end
 
 class Move
   attr_reader :value
+
   VALUES = ['rock', 'paper', 'scissors', 'lizard', 'spock']
 
   def initialize(value)
@@ -44,38 +45,60 @@ class Move
     @value == 'spock'
   end
 
-  def >(other_move)
-    if (rock? && other_move.scissors?) ||
-       (rock? && other_move.lizard?) ||
-       (paper? && other_move.rock?) ||
-       (paper? && other_move.spock?) ||
-       (scissors? && other_move.paper?) ||
-       (scissors? && other_move.lizard?) ||
-       (lizard? && other_move.paper?) ||
-       (lizard? && other_move.spock?) ||
-       (spock? && other_move.rock?) ||
-       (spock? && other_move.scissors?)
-      return true
-    end
+  def less_than_rock?
+    scissors? || lizard?
+  end
 
-    false
+  def less_than_paper?
+    rock? || spock?
+  end
+
+  def less_than_scissors?
+    paper? || lizard?
+  end
+
+  def less_than_lizard?
+    paper? || spock?
+  end
+
+  def less_than_spock?
+    rock? || scissors?
+  end
+
+  def greater_than_rock?
+    paper? || spock?
+  end
+
+  def greater_than_paper?
+    scissors? || lizard?
+  end
+
+  def greater_than_scissors?
+    rock? || spock?
+  end
+
+  def greater_than_lizard?
+    rock? || scissors?
+  end
+
+  def greater_than_spock?
+    lizard? || paper?
+  end
+
+  def >(other_move)
+    (rock? && other_move.less_than_rock?) ||
+      (paper? && other_move.less_than_paper?) ||
+      (scissors? && other_move.less_than_scissors?) ||
+      (lizard? && other_move.less_than_lizard?) ||
+      (spock? && other_move.less_than_spock?)
   end
 
   def <(other_move)
-    if (rock? && other_move.paper?) ||
-       (rock? && other_move.spock?) ||
-       (paper? && other_move.scissors?) ||
-       (paper? && other_move.lizard?) ||
-       (scissors? && other_move.rock?) ||
-       (scissors? && other_move.spock?) ||
-       (lizard? && other_move.rock?) ||
-       (lizard? && other_move.scissors?) ||
-       (spock? && other_move.paper?) ||
-       (spock? && other_move.lizard?)
-      return true
-    end
-
-    false
+    (rock? && other_move.greater_than_rock?) ||
+      (paper? && other_move.greater_than_paper?) ||
+      (scissors? && other_move.greater_than_scissors?) ||
+      (lizard? && other_move.greater_than_lizard?) ||
+      (spock? && other_move.greater_than_spock?)
   end
 
   def to_s
@@ -83,7 +106,9 @@ class Move
   end
 end
 
-class Player < Score
+class Player
+  include Score
+
   attr_accessor :move, :name, :history
 
   def initialize
@@ -113,7 +138,7 @@ class Human < Player
       break if Move::VALUES.include?(choice)
       puts "Sorry invalid choice, please enter #{Move::VALUES.join(', ')}"
     end
-    self.history << choice.dup
+    history << choice.dup
     self.move = Move.new(choice)
   end
 end
@@ -125,7 +150,7 @@ class Computer < Player
 
   def choose
     new_move = Move.new(Move::VALUES.sample)
-    self.history << new_move.value.dup
+    history << new_move.value.dup
     self.move = new_move
   end
 end
@@ -147,11 +172,14 @@ class RPSGame
     puts "Thanks for playing Rock, Paper, Scissors, Lizard, Spock. Good bye!"
   end
 
+  def previous_moves(player)
+    player.history[0..-2].join(', ')
+  end
+
   def display_history
-    if human.history.size > 1
-      puts "#{human.name} has previously chose #{human.history[0..-2].join(', ')}."
-      puts "#{computer.name} previously chose #{computer.history[0..-2].join(', ')}."
-    end
+    return unless human.history.size > 1
+    puts "#{human.name} has previously chose #{previous_moves(human)}."
+    puts "#{computer.name} previously chose #{previous_moves(computer)}."
   end
 
   def display_moves
@@ -198,16 +226,20 @@ class RPSGame
     false
   end
 
+  def game_round
+    human.choose
+    computer.choose
+    display_history
+    display_moves
+    display_winner
+    add_winner_score
+    display_score
+  end
+
   def play
     display_welcome_message
     loop do
-      human.choose
-      computer.choose
-      display_history
-      display_moves
-      display_winner
-      add_winner_score
-      display_score
+      game_round
       break if game_over?
       break unless play_again?
     end
@@ -216,4 +248,3 @@ class RPSGame
 end
 
 RPSGame.new.play
-
